@@ -14,7 +14,11 @@ type Name struct {
 }
 
 // SetName set the name
-func (n Name) SetName(name string) error {
+func (n *Name) SetName(name string) error {
+	if name == "" {
+		return fmt.Errorf("domain name cannot be empty")
+	}
+
 	if len([]byte(name)) > 255 {
 		return fmt.Errorf("domain name cannot exceed 255 bytes. %s", name)
 	}
@@ -38,16 +42,18 @@ func (n Name) SetName(name string) error {
 		data = append(data, rawLabel...)
 	}
 
+	data = append(data, 0)
+
 	n.data = data
 	return nil
 }
 
 // GetName get the name
-func (n Name) GetName() string {
+func (n *Name) GetName() string {
 	return ""
 }
 
 // ToBytes return the byte array raw data of the Name
-func (n Name) ToBytes() []byte {
+func (n *Name) ToBytes() []byte {
 	return n.data
 }
