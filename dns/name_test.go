@@ -58,12 +58,37 @@ func TestSetName_labelTooLarge(t *testing.T) {
 	}
 }
 
+func TestSetName_emptyLabel(t *testing.T) {
+	var names = []string{
+		".foo",
+		".foo.",
+		"..foo",
+		"..foo.",
+		"foo..bar",
+		"foo..bar.",
+		"foo..",
+	}
+
+	n := dns.Name{}
+	for _, name := range names {
+		err := n.SetName(name)
+		if err == nil {
+			t.Fatalf("SetName should return an error if label is empty. name=%s", name)
+		}
+
+		if !strings.Contains(err.Error(), "domain name label cannot be empty") {
+			t.Fatalf("SetName should return a specific error if label is empty. name=%s", name)
+		}
+	}
+}
+
 func TestSetName(t *testing.T) {
 	var cases = []struct {
 		name     string // input
 		expected []byte // expected result
 	}{
 		{"foo.bar", []byte{3, 102, 111, 111, 3, 98, 97, 114, 0}},
+		{"foo.bar.", []byte{3, 102, 111, 111, 3, 98, 97, 114, 0}},
 	}
 
 	n := dns.Name{}

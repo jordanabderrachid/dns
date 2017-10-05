@@ -23,6 +23,7 @@ func (n *Name) SetName(name string) error {
 		return fmt.Errorf("domain name cannot exceed 255 bytes. %s", name)
 	}
 
+	name = strings.TrimSuffix(name, ".")
 	name = strings.ToLower(name)
 	labels := strings.Split(name, ".")
 	if len(labels) == 0 {
@@ -32,6 +33,10 @@ func (n *Name) SetName(name string) error {
 	data := make([]byte, 0, 0)
 	for _, label := range labels {
 		rawLabel := []byte(label)
+		if len(rawLabel) == 0 {
+			return fmt.Errorf("domain name label cannot be empty. %s", label)
+		}
+
 		if len(rawLabel) > 63 {
 			return fmt.Errorf("domain name label cannot exceed 63 bytes. %s %s",
 				label, name)
