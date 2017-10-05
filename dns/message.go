@@ -55,13 +55,6 @@ type Header struct {
 	AdditionalCount uint16
 }
 
-// Question represents the question of the DNS message
-type Question struct {
-	Name  Name
-	Type  QType
-	Class Class
-}
-
 // Message represents the message exchanged during a DNS communication
 // A Message can either be a query or a response
 type Message struct {
