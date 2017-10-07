@@ -77,3 +77,29 @@ type ResourceRecord struct {
 	DataLength uint16
 	Data       []byte
 }
+
+// ToBytes returns the byte array form of the resource record to be transmitted
+// over the wire
+func (rr *ResourceRecord) ToBytes() []byte {
+	data := make([]byte, 0, 0)
+
+	data = append(data, rr.Name.ToBytes()...)
+
+	data = append(data, byte(rr.Type>>8))
+	data = append(data, byte(rr.Type&0xFF))
+
+	data = append(data, byte(rr.Class>>8))
+	data = append(data, byte(rr.Class&0xFF))
+
+	data = append(data, byte(rr.TTL>>24))
+	data = append(data, byte(rr.TTL>>16))
+	data = append(data, byte(rr.TTL>>8))
+	data = append(data, byte(rr.TTL&0xFF))
+
+	data = append(data, byte(rr.DataLength>>8))
+	data = append(data, byte(rr.DataLength&0xFF))
+
+	data = append(data, rr.Data...)
+
+	return data
+}
