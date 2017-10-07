@@ -41,7 +41,7 @@ type Opcode uint8
 
 // Header represents the header of the DNS message
 type Header struct {
-	ID              int16
+	ID              uint16
 	QR              QR
 	Opcode          Opcode
 	AA              AA
