@@ -25,11 +25,14 @@ func main() {
 	n, err = conn.Read(resp)
 	panicOnErr(err)
 	log.Printf("Read %d bytes (%v)", n, resp)
+
+	receivedMessage, err := dns.MessageFromBytes(resp)
+	panicOnErr(err)
+	log.Printf("%s", receivedMessage.String())
 }
 
 func panicOnErr(err error) {
 	if err != nil {
-
 		panic(err)
 	}
 }

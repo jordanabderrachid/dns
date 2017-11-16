@@ -1,5 +1,9 @@
 package dns
 
+import (
+	"strings"
+)
+
 // Message represents the message exchanged during a DNS communication
 // A Message can either be a query or a response
 type Message struct {
@@ -8,6 +12,17 @@ type Message struct {
 	Answers    []ResourceRecord
 	Authority  []ResourceRecord
 	Additional []ResourceRecord
+}
+
+func (m Message) String() string {
+	lines := []string{
+		"[message]",
+		"",
+		"[header]",
+		m.Header.String(),
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 // ToBytes returns the byte array form of the message to be transmitted over
@@ -56,4 +71,13 @@ func NewQuestion(name string) (*Message, error) {
 		Header:   h,
 		Question: q,
 	}, nil
+}
+
+// MessageFromBytes .
+func MessageFromBytes(data []byte) (Message, error) {
+	header, err := headerFromBytes(data)
+
+	return Message{
+		Header: header,
+	}, err
 }
