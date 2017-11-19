@@ -10,6 +10,7 @@ const labelLengthMask byte = 0x3F // 0b00111111
 // Name is the name of the owner of the resource record. ie: "www.google.com."
 // Must be at most 255 bytes long.
 type Name struct {
+	name string
 	data []byte
 }
 
@@ -50,15 +51,43 @@ func (n *Name) SetName(name string) error {
 	data = append(data, 0)
 
 	n.data = data
+	n.name = name
 	return nil
 }
 
 // GetName get the name
 func (n *Name) GetName() string {
-	return ""
+	return n.name
 }
 
 // ToBytes return the byte array raw data of the Name
 func (n *Name) ToBytes() []byte {
 	return n.data
+}
+
+func (n *Name) fromBytes(data []byte) (int, error) {
+	name := ""
+
+	i := 0
+	for {
+		name += "."
+		labelLength := int(data[i])
+
+		if labelLength == 0 {
+			i++
+			break
+		}
+
+		label := string(data[i+1 : i+1+labelLength])
+		name += label
+		i += labelLength + 1
+	}
+
+	n.name = name
+	n.data = data[0:i]
+	return i, nil
+}
+
+func nameFromBytes(data []byte) (Name, int, error) {
+	return Name{}, 0, nil
 }

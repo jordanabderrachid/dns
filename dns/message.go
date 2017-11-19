@@ -20,6 +20,9 @@ func (m Message) String() string {
 		"",
 		"[header]",
 		m.Header.String(),
+		"",
+		"[question]",
+		m.Question.String(),
 	}
 
 	return strings.Join(lines, "\n")
@@ -76,8 +79,19 @@ func NewQuestion(name string) (*Message, error) {
 // MessageFromBytes .
 func MessageFromBytes(data []byte) (Message, error) {
 	header, err := headerFromBytes(data)
+	if err != nil {
+		return Message{}, err
+	}
+
+	offset := 12 // header is 12 bytes long
+	question, n, err := questionFromBytes(data[offset:])
+	if err != nil {
+		return Message{}, err
+	}
+	offset += n
 
 	return Message{
-		Header: header,
-	}, err
+		Header:   header,
+		Question: question,
+	}, nil
 }
