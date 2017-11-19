@@ -152,16 +152,16 @@ func boolToByte(b bool) byte {
 	return 0
 }
 
-func headerFromBytes(data []byte) (Header, error) {
+func headerFromBytes(data []byte) (Header, int, error) {
 	if len(data) < 12 {
-		return Header{}, fmt.Errorf("failed to parse header, invalid data length. length=%d", len(data))
+		return Header{}, 0, fmt.Errorf("failed to parse header, invalid data length. length=%d", len(data))
 	}
 
 	id := catBytes(data[0], data[1])
 	qr := extractQR(data[2])
 	opcode, err := extractOpcode(data[2])
 	if err != nil {
-		return Header{}, err
+		return Header{}, 0, err
 	}
 	aa := extractAA(data[2])
 	tc := extractTC(data[2])
@@ -169,7 +169,7 @@ func headerFromBytes(data []byte) (Header, error) {
 	ra := extractRA(data[3])
 	rcode, err := extractRCode(data[3])
 	if err != nil {
-		return Header{}, err
+		return Header{}, 0, err
 	}
 	questionCount := catBytes(data[4], data[5])
 	answerCount := catBytes(data[6], data[7])
@@ -189,7 +189,7 @@ func headerFromBytes(data []byte) (Header, error) {
 		AnswerCount:     answerCount,
 		AuthorityCount:  authorityCount,
 		AdditionalCount: additionalCount,
-	}, nil
+	}, 12, nil
 }
 
 func catBytes(left, right byte) uint16 {

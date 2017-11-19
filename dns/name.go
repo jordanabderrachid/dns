@@ -65,29 +65,45 @@ func (n *Name) ToBytes() []byte {
 	return n.data
 }
 
-func (n *Name) fromBytes(data []byte) (int, error) {
+func (n *Name) fromBytes(data []byte, offset int) (int, error) {
 	name := ""
-
 	i := 0
+
 	for {
 		name += "."
-		labelLength := int(data[i])
+		labelLengthByte := data[offset]
+		i++
+		offset++
 
-		if labelLength == 0 {
-			i++
+		if labelLengthByte == 0 {
 			break
 		}
 
-		label := string(data[i+1 : i+1+labelLength])
+		if isPointer(labelLengthByte) {
+			left := int(labelLengthByte & 63) // & 0b00111111
+			right := int(data[offset])
+			i++
+			offset++
+
+			location := left<<8 | right
+			pointedLabelLength := int(data[location])
+			// FIXME: read the entire name, not only first label
+			name += string(data[location+1 : location+1+pointedLabelLength])
+			break
+		}
+
+		labelLength := int(labelLengthByte)
+		label := string(data[offset : offset+labelLength])
 		name += label
-		i += labelLength + 1
+		offset += labelLength
+		i += labelLength
 	}
 
 	n.name = name
-	n.data = data[0:i]
+	n.data = data[offset : offset+i]
 	return i, nil
 }
 
-func nameFromBytes(data []byte) (Name, int, error) {
-	return Name{}, 0, nil
+func isPointer(labelLength byte) bool {
+	return labelLength>>6 == 3 // 0b11XXXXXX
 }

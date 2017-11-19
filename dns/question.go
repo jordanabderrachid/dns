@@ -37,26 +37,33 @@ func (q *Question) String() string {
 	return strings.Join(lines, "\n")
 }
 
-func questionFromBytes(data []byte) (Question, int, error) {
+func questionFromBytes(data []byte, offset int) (Question, int, error) {
+	n := 0
 	name := Name{}
-	n, err := name.fromBytes(data)
+	bytesRead, err := name.fromBytes(data, offset)
 	if err != nil {
 		return Question{}, 0, err
 	}
+	n += bytesRead
+	offset += bytesRead
 
-	qtype, err := extractQType(data[n], data[n+1])
+	qtype, err := extractQType(data[offset], data[offset+1])
 	if err != nil {
 		return Question{}, 0, err
 	}
+	n += 2
+	offset += 2
 
-	class, err := extractClass(data[n+2], data[n+3])
+	class, err := extractClass(data[offset], data[offset+1])
 	if err != nil {
 		return Question{}, 0, err
 	}
+	n += 2
+	offset += 2
 
 	return Question{
 		Name:  name,
 		Type:  qtype,
 		Class: class,
-	}, n + 3, nil
+	}, n, nil
 }

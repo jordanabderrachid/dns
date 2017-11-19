@@ -37,6 +37,10 @@ const (
 	MXType Type = 15
 	// TXTType is the RR type representing text strings
 	TXTType Type = 16
+	// AAAAType is the RR type representing a ipv6 host address
+	AAAAType Type = 28
+	// CAAType is the RR type representing a DNS Certification Authority Authorization
+	CAAType Type = 257
 )
 
 const (
@@ -65,6 +69,54 @@ const (
 
 // Type represents the type of the resource record.
 type Type uint16
+
+func extractType(left, right byte) (Type, error) {
+	value := uint16(left)<<8 | uint16(right)
+	switch value {
+	case 1:
+		return AType, nil
+	case 2:
+		return NSType, nil
+	case 3:
+		return MDType, nil
+	case 4:
+		return MFType, nil
+	case 5:
+		return CNAMEType, nil
+	case 6:
+		return SOAType, nil
+	case 7:
+		return MBType, nil
+	case 8:
+		return MGType, nil
+	case 9:
+		return MRType, nil
+	case 10:
+		return NULLType, nil
+	case 11:
+		return WKSType, nil
+	case 12:
+		return PTRType, nil
+	case 13:
+		return HINFOType, nil
+	case 14:
+		return MINFOType, nil
+	case 15:
+		return MXType, nil
+	case 16:
+		return TXTType, nil
+	case 28:
+		return AAAAType, nil
+	case 257:
+		return CAAType, nil
+	default:
+		return 0, fmt.Errorf("failed to extract type. invalid value 0x%x", value)
+	}
+}
+
+func (t Type) String() string {
+	return QType(t).String()
+}
 
 // QType represents the type of a query. It is a superset of Type. All Type are valid Qtype.
 type QType Type
@@ -103,6 +155,10 @@ func (t QType) String() string {
 		return "MX"
 	case QType(TXTType):
 		return "TXT"
+	case QType(AAAAType):
+		return "AAAA"
+	case QType(CAAType):
+		return "CAA"
 	case AXFRQType:
 		return "AXFRQ"
 	case MAILBQType:
@@ -119,38 +175,6 @@ func (t QType) String() string {
 func extractQType(left, right byte) (QType, error) {
 	value := uint16(left)<<8 | uint16(right)
 	switch value {
-	case 1:
-		return QType(AType), nil
-	case 2:
-		return QType(NSType), nil
-	case 3:
-		return QType(MDType), nil
-	case 4:
-		return QType(MFType), nil
-	case 5:
-		return QType(CNAMEType), nil
-	case 6:
-		return QType(SOAType), nil
-	case 7:
-		return QType(MBType), nil
-	case 8:
-		return QType(MGType), nil
-	case 9:
-		return QType(MRType), nil
-	case 10:
-		return QType(NULLType), nil
-	case 11:
-		return QType(WKSType), nil
-	case 12:
-		return QType(PTRType), nil
-	case 13:
-		return QType(HINFOType), nil
-	case 14:
-		return QType(MINFOType), nil
-	case 15:
-		return QType(MXType), nil
-	case 16:
-		return QType(TXTType), nil
 	case 252:
 		return AXFRQType, nil
 	case 253:
@@ -160,7 +184,8 @@ func extractQType(left, right byte) (QType, error) {
 	case 255:
 		return ANYQType, nil
 	default:
-		return ANYQType, fmt.Errorf("failed to extract qtype. invalid value 0x%x", value)
+		t, err := extractType(left, right)
+		return QType(t), err
 	}
 }
 
@@ -236,4 +261,59 @@ func (rr *ResourceRecord) ToBytes() []byte {
 	data = append(data, rr.Data...)
 
 	return data
+}
+
+func (rr ResourceRecord) stringLines() []string {
+	return []string{
+		fmt.Sprintf("[name] %s", rr.Name.GetName()),
+		fmt.Sprintf("[type] %s", rr.Type),
+		fmt.Sprintf("[class] %s", rr.Class),
+		fmt.Sprintf("[ttl] %d", rr.TTL),
+		fmt.Sprintf("[data] %v", rr.Data),
+	}
+}
+
+func resourceRecordFromBytes(data []byte, offset int) (ResourceRecord, int, error) {
+	n := 0
+	name := Name{}
+	bytesRead, err := name.fromBytes(data, offset)
+	if err != nil {
+		return ResourceRecord{}, 0, err
+	}
+	n += bytesRead
+	offset += bytesRead
+
+	rtype, err := extractType(data[offset], data[offset+1])
+	if err != nil {
+		return ResourceRecord{}, 0, err
+	}
+	n += 2
+	offset += 2
+
+	class, err := extractClass(data[offset], data[offset+1])
+	if err != nil {
+		return ResourceRecord{}, 0, err
+	}
+	n += 2
+	offset += 2
+
+	ttl := int32(data[offset])<<24 | int32(data[offset+1])<<16 | int32(data[offset+2])<<8 | int32(data[offset+3])
+	n += 4
+	offset += 4
+
+	dataLength := uint16(data[offset])<<8 | uint16(data[offset+1])
+	n += 2
+	offset += 2
+
+	rdata := data[offset : offset+int(dataLength)]
+	n += int(dataLength)
+
+	return ResourceRecord{
+		Name:       name,
+		Type:       rtype,
+		Class:      class,
+		TTL:        ttl,
+		DataLength: dataLength,
+		Data:       rdata,
+	}, n, nil
 }

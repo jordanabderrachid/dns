@@ -23,9 +23,25 @@ func (m Message) String() string {
 		"",
 		"[question]",
 		m.Question.String(),
+		"",
+		"[anwers]",
 	}
 
+	lines = append(lines, m.answersToString()...)
+
 	return strings.Join(lines, "\n")
+}
+
+func (m Message) answersToString() []string {
+	lines := make([]string, 0)
+
+	for _, a := range m.Answers {
+		lines = append(lines, "[answer]")
+		lines = append(lines, a.stringLines()...)
+		lines = append(lines, "")
+	}
+
+	return lines
 }
 
 // ToBytes returns the byte array form of the message to be transmitted over
@@ -77,21 +93,34 @@ func NewQuestion(name string) (*Message, error) {
 }
 
 // MessageFromBytes .
-func MessageFromBytes(data []byte) (Message, error) {
-	header, err := headerFromBytes(data)
+func MessageFromBytes(data []byte) (Message, int, error) {
+	n := 0
+	header, bytesRead, err := headerFromBytes(data)
 	if err != nil {
-		return Message{}, err
+		return Message{}, n, err
 	}
+	n += bytesRead
 
-	offset := 12 // header is 12 bytes long
-	question, n, err := questionFromBytes(data[offset:])
+	question, bytesRead, err := questionFromBytes(data, n)
 	if err != nil {
-		return Message{}, err
+		return Message{}, n, err
 	}
-	offset += n
+	n += bytesRead
+
+	answers := make([]ResourceRecord, header.AnswerCount)
+	for i := 0; i < int(header.AnswerCount); i++ {
+		rr, bytesRead, err := resourceRecordFromBytes(data, n)
+		if err != nil {
+			return Message{}, n, err
+		}
+
+		answers[i] = rr
+		n += bytesRead
+	}
 
 	return Message{
 		Header:   header,
 		Question: question,
-	}, nil
+		Answers:  answers,
+	}, n, nil
 }

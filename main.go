@@ -17,16 +17,14 @@ func main() {
 	panicOnErr(err)
 	defer conn.Close()
 
-	n, err := conn.Write(m.ToBytes())
+	_, err = conn.Write(m.ToBytes())
 	panicOnErr(err)
-	log.Printf("wrote %d bytes", n)
 
 	resp := make([]byte, 512)
-	n, err = conn.Read(resp)
+	_, err = conn.Read(resp)
 	panicOnErr(err)
-	log.Printf("Read %d bytes (%v)", n, resp)
 
-	receivedMessage, err := dns.MessageFromBytes(resp)
+	receivedMessage, _, err := dns.MessageFromBytes(resp)
 	panicOnErr(err)
 	log.Printf("%s", receivedMessage.String())
 }
